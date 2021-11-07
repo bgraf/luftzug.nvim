@@ -65,7 +65,7 @@ local function goto_line(lineno)
 end
 
 local function start_insert()
-    vim.cmd(':startinsert')
+    vim.cmd(':startinsert!')
 end
 
 function _G.lzug_handle_tab()
@@ -88,25 +88,31 @@ local function trim(s)
    return s:match'^%s*(.*%S)' or ''
 end
 
-function _G.lzug_add_reference()
-    -- Find reference section
+local function get_current_lines() 
     local nlines = vim.api.nvim_buf_line_count(0)
-    local lines = vim.api.nvim_buf_get_lines(0, 0, nlines, true)
+    return vim.api.nvim_buf_get_lines(0, 0, nlines, true)
+end
 
-    local ref_section_header = nil
+local function find_line_of_heading1(name, lines)
+    if lines == nil then
+        lines = get_current_lines()
+    end
+
+    name = '# ' .. name
 
     for i=1,#lines do
-        if lines[i] == '# Referenzen' then
-            ref_section_header = i
-            break
+        if lines[i] == name then
+            return i, lines
         end
     end
 
-    if not ref_section_header then return end
+    return nil, lines
+end
 
-    local last_block_line = ref_section_header
+local function find_last_text_line_heading1(heading_lineno, lines)
+    local lineno = heading_lineno
 
-    for i=ref_section_header+1, #lines do
+    for i=heading_lineno+1, #lines do
         local prefix = lines[i]:sub(1,2)
         if prefix == '# ' then
             break
@@ -114,14 +120,48 @@ function _G.lzug_add_reference()
 
         local is_empty = #trim(lines[i]) == 0
         if not is_empty then
-            last_block_line = i
+            lineno = i
         end
     end
 
+    return lineno
+end
+
+local function append_to_heading1(name, f)
+    local lines = get_current_lines()
+
+    local heading_lineno = find_line_of_heading1(name, lines)
+    if not heading_lineno then return end
+
+    local last_block_line = find_last_text_line_heading1(heading_lineno, lines)
+
     add_current_position_to_jumplist()
-    goto_line(last_block_line)
-    vim.cmd('normal! 2o')
-    start_insert()
+    vim.fn.append(last_block_line, {'', ''})
+    goto_line(last_block_line+2)
+
+    f(last_block_line+2)
+end
+
+function _G.lzug_add_reference()
+    append_to_heading1(
+        'Referenzen',
+        function (_)
+            start_insert()
+        end
+    )
+end
+
+function _G.lzug_add_link()
+    append_to_heading1(
+        'Links',
+        function (lineno)
+            -- I don't know why I need to insert two spaces here, otherwise the inserted link
+            -- eats the "plus" symbol.
+            vim.fn.setline(lineno, "+  ")
+            start_insert()
+            vim.cmd(':ZettelSearch')
+        end
+    )
 end
 
 
