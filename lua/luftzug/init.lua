@@ -160,9 +160,12 @@ function _G.lzug_add_link()
             vim.fn.setline(lineno, "+  ")
             start_insert()
             vim.cmd(':ZettelSearch')
+            vim.api.nvim_feedkeys(':title: ', 'n', true)
         end
     )
 end
 
+function M.format_buffer()
+end
 
 return M

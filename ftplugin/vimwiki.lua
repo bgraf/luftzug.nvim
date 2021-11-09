@@ -8,3 +8,6 @@ if vim.g.luftzug_follow_link_keymap then
     vim.api.nvim_buf_set_keymap(0, 'n', vim.g.luftzug_follow_link_keymap, "<Plug>LzugFollowFootnoteOrLink", { noremap = false })
 end
 
+-- vim.cmd([[command! -buffer LuftzugFormatBuffer :lua require'luftzug'.format_buffer()]])
+-- vim.cmd([[autocmd BufWritePre <buffer> :LuftzugFormatBuffer]])
+
