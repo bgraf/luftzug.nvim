@@ -165,7 +165,64 @@ function _G.lzug_add_link()
     )
 end
 
-function M.format_buffer()
+local function find_max_footnote_id()
+    local max_footnote_id = 0
+
+    local pat = '\\[\\^\\d\\+\\]'
+    local reg = vim.regex(pat)
+
+    local nlines = vim.api.nvim_buf_line_count(0)
+    for i=0,nlines-1 do
+
+        local current_start = 0
+
+        while true do
+            local res = reg:match_line(0, i, current_start)
+            if not res then break end
+            -- Make res absolute, because reg:match_line returns relative to current_start.
+            res = res + current_start
+
+            local line = vim.api.nvim_buf_get_lines(0, i, i+1, true)[1]
+
+            local s, e = find_footnote_start(line, res+2)
+            if not s then print("error!"); return nil end
+
+            local footnote_id = tonumber(line:sub(s, e))
+
+            current_start = e+1
+
+            if footnote_id > max_footnote_id then
+                max_footnote_id = footnote_id
+            end
+        end
+    end
+
+    return max_footnote_id
+end
+
+function M.add_footnote(args)
+    args = trim(args)
+
+    local max_footnote_id = find_max_footnote_id()
+    if not max_footnote_id then return end
+
+    local next_footnote_id = max_footnote_id+1
+
+    vim.api.nvim_put({'[^' .. next_footnote_id .. ']'}, 'c', true, true)
+
+    local window_state = vim.fn['winsaveview']()
+
+    append_to_heading1(
+        'Referenzen',
+        function (_)
+            vim.api.nvim_put({'[^' .. next_footnote_id .. ']: ' .. args}, 'c', true, true)
+            if args:len() == 0 then
+                start_insert()
+            else
+                vim.fn['winrestview'](window_state)
+            end
+        end
+    )
 end
 
 return M

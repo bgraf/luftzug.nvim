@@ -11,3 +11,5 @@ end
 -- vim.cmd([[command! -buffer LuftzugFormatBuffer :lua require'luftzug'.format_buffer()]])
 -- vim.cmd([[autocmd BufWritePre <buffer> :LuftzugFormatBuffer]])
 
+vim.cmd([[command! -nargs=* -buffer LzugAddFootnote :lua require'luftzug'.add_footnote(<q-args>)]])
+
